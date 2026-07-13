@@ -55,11 +55,20 @@ export function isRaceWeek(meeting, now = new Date()) {
     const startDate = new Date(meeting.date_start);
     const endDate = new Date(meeting.date_end);
 
-    // race week starts 3 days before
-    const raceWeekStart = new Date(startDate);
-    raceWeekStart.setDate(raceWeekStart.getDate() - 3);
+    // race week starts on the Monday of the race weekend
+    // openf1 date_start is usually Thursday or Friday. 
+    // Let's set the start of race week to 4 days before the start date, at 00:00 UTC.
+    const raceWeekStart = new Date(startDate.getTime());
+    raceWeekStart.setUTCDate(raceWeekStart.getUTCDate() - 4);
+    raceWeekStart.setUTCHours(0, 0, 0, 0);
 
-    return now >= raceWeekStart && now <= endDate;
+    // End of race week is the end of the Sunday (or meeting end date) at 23:59 UTC
+    const raceWeekEnd = new Date(endDate.getTime());
+    raceWeekEnd.setUTCHours(23, 59, 59, 999);
+
+    const current = new Date(now.getTime());
+
+    return current >= raceWeekStart && current <= raceWeekEnd;
 }
 
 // find next session thats coming up

@@ -8,88 +8,117 @@ import SessionSchedule from '@/components/SessionSchedule';
 import TrackInfo from '@/components/TrackInfo';
 import WeatherWidget from '@/components/WeatherWidget';
 import Loading from '@/components/Loading';
+import { Globe, Clock } from 'lucide-react';
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [raceData, setRaceData] = useState({
-    meeting: null,
-    sessions: [],
-    nextSession: null,
-    weather: null,
-    isRaceWeekNow: false,
-  });
+  
+  // App state
+  const [meetings, setMeetings] = useState([]);
+  const [allSessions, setAllSessions] = useState([]);
+  const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [selectedSessions, setSelectedSessions] = useState([]);
+  const [nextSession, setNextSession] = useState(null);
+  const [weather, setWeather] = useState(null);
+  const [isRaceWeekNow, setIsRaceWeekNow] = useState(false);
+  
+  // Timezone preference: 'local' or 'track'
+  const [timezoneMode, setTimezoneMode] = useState('local');
 
+  // Initial load of calendar meetings and all sessions
   useEffect(() => {
-    async function fetchData() {
+    async function fetchCalendarData() {
       try {
         setLoading(true);
         setError(null);
 
         const currentYear = new Date().getFullYear();
 
-        // get meetings and sessions
-        const [meetings, allSessions] = await Promise.all([
+        const [fetchedMeetings, fetchedSessions] = await Promise.all([
           getMeetings(currentYear),
           getSessionsByYear(currentYear).catch(() => []),
         ]);
 
-        const nextMeeting = findNextMeeting(meetings);
+        // Filter out cancelled meetings
+        const activeMeetings = fetchedMeetings.filter(m => !m.is_cancelled);
+        setMeetings(activeMeetings);
+        setAllSessions(fetchedSessions);
 
-        if (!nextMeeting) {
-          // try next year if no races left
-          const nextYearMeetings = await getMeetings(currentYear + 1);
-          const nextYearMeeting = findNextMeeting(nextYearMeetings);
+        let initialMeeting = findNextMeeting(activeMeetings);
 
-          if (nextYearMeeting) {
+        // If no upcoming meeting for this year, try next year
+        if (!initialMeeting) {
+          const nextYearMeetings = await getMeetings(currentYear + 1).catch(() => []);
+          const activeNextYearMeetings = nextYearMeetings.filter(m => !m.is_cancelled);
+          if (activeNextYearMeetings.length > 0) {
+            setMeetings(activeNextYearMeetings);
+            
             const nextYearSessions = await getSessionsByYear(currentYear + 1).catch(() => []);
-            const meetingSessions = getSessionsForMeeting(nextYearSessions, nextYearMeeting.meeting_key);
-            const nextSession = findNextSession(meetingSessions);
-
-            setRaceData({
-              meeting: nextYearMeeting,
-              sessions: meetingSessions,
-              nextSession,
-              weather: null,
-              isRaceWeekNow: isRaceWeek(nextYearMeeting),
-            });
+            setAllSessions(nextYearSessions);
+            
+            initialMeeting = findNextMeeting(activeNextYearMeetings) || activeNextYearMeetings[0];
+          } else {
+            // Fallback to the last meeting of this year
+            initialMeeting = activeMeetings[activeMeetings.length - 1];
           }
-        } else {
-          const meetingSessions = getSessionsForMeeting(allSessions, nextMeeting.meeting_key);
-          const nextSession = findNextSession(meetingSessions);
-
-          // try to get weather if its race week
-          let weather = null;
-          if (isRaceWeek(nextMeeting)) {
-            try {
-              weather = await getWeather(nextMeeting.meeting_key);
-            } catch (e) {
-              console.log('Weather not available');
-            }
-          }
-
-          setRaceData({
-            meeting: nextMeeting,
-            sessions: meetingSessions,
-            nextSession,
-            weather,
-            isRaceWeekNow: isRaceWeek(nextMeeting),
-          });
         }
+
+        setSelectedMeeting(initialMeeting);
       } catch (err) {
-        console.error('Failed to fetch race data:', err);
-        setError('Failed to load race data. Please try again later.');
+        console.error('Failed to fetch race calendar data:', err);
+        setError('Failed to load F1 calendar. Please try again later.');
       } finally {
         setLoading(false);
       }
     }
 
-    fetchData();
+    fetchCalendarData();
   }, []);
+
+  // Effect to load sessions and weather for the selected meeting
+  useEffect(() => {
+    if (!selectedMeeting) return;
+
+    async function loadMeetingDetails() {
+      try {
+        const meetingSessions = getSessionsForMeeting(allSessions, selectedMeeting.meeting_key);
+        setSelectedSessions(meetingSessions);
+        
+        const next = findNextSession(meetingSessions);
+        setNextSession(next);
+
+        const isWeek = isRaceWeek(selectedMeeting);
+        setIsRaceWeekNow(isWeek);
+
+        // Fetch weather
+        setWeather(null);
+        if (isWeek) {
+          try {
+            const w = await getWeather(selectedMeeting.meeting_key);
+            setWeather(w);
+          } catch (e) {
+            console.log('Weather not available for this meeting key');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading meeting details:', err);
+      }
+    }
+
+    loadMeetingDetails();
+  }, [selectedMeeting, allSessions]);
+
+  const handleMeetingChange = (meetingKey) => {
+    const meeting = meetings.find(m => m.meeting_key === Number(meetingKey));
+    if (meeting) {
+      setSelectedMeeting(meeting);
+    }
+  };
 
   if (loading) {
     return (
-      <main className="container-main">
+      <main className="container-main min-h-screen flex items-center justify-center">
         <Loading />
       </main>
     );
@@ -97,12 +126,12 @@ export default function Home() {
 
   if (error) {
     return (
-      <main className="container-main">
-        <div className="text-center py-16">
-          <p className="text-[var(--f1-red)] text-xl mb-4">⚠️ {error}</p>
+      <main className="container-main flex items-center justify-center min-h-screen">
+        <div className="text-center py-16 glass-card p-8 max-w-md w-full border-[rgba(225,6,0,0.3)]">
+          <p className="text-[var(--f1-red)] text-xl font-bold mb-4">⚠️ {error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-[var(--f1-red)] rounded-lg hover:bg-[var(--f1-red-dark)] transition-colors"
+            className="px-6 py-3 bg-[var(--f1-red)] rounded-lg hover:bg-[var(--f1-red-dark)] transition-all font-semibold shadow-lg glow-red"
           >
             Retry
           </button>
@@ -111,41 +140,100 @@ export default function Home() {
     );
   }
 
-  const { meeting, sessions, nextSession, weather, isRaceWeekNow } = raceData;
-
   return (
-    <main className="container-main">
-      <Hero meeting={meeting} isRaceWeek={isRaceWeekNow} />
+    <main className="container-main space-y-6 md:space-y-10">
+      {/* Top Header controls: Calendar Selector & Timezone Toggle */}
+      <header className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🏁</span>
+          <span className="font-display font-extrabold text-2xl tracking-wider uppercase text-glow">
+            RaceWeek<span className="text-[var(--f1-red)]">Hub</span>
+          </span>
+        </div>
 
-      <section className="my-8 md:my-12">
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end">
+          {/* Race dropdown selector */}
+          <div className="relative w-full sm:w-64">
+            <select
+              value={selectedMeeting?.meeting_key || ''}
+              onChange={(e) => handleMeetingChange(e.target.value)}
+              className="w-full bg-[var(--f1-dark)] border border-[rgba(255,255,255,0.1)] text-sm rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[var(--f1-red)] transition-colors custom-select cursor-pointer font-medium"
+            >
+              {meetings.map((m) => (
+                <option key={m.meeting_key} value={m.meeting_key}>
+                  {m.meeting_name} ({m.circuit_short_name})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Timezone Preference Switcher */}
+          <div className="flex bg-[var(--f1-dark)] border border-[rgba(255,255,255,0.06)] rounded-xl p-1 w-full sm:w-auto">
+            <button
+              onClick={() => setTimezoneMode('local')}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 w-1/2 sm:w-auto ${
+                timezoneMode === 'local'
+                  ? 'bg-[var(--f1-red)] text-white shadow-md shadow-red-900/30'
+                  : 'text-[var(--f1-gray)] hover:text-white'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              Local Time
+            </button>
+            <button
+              onClick={() => setTimezoneMode('track')}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 w-1/2 sm:w-auto ${
+                timezoneMode === 'track'
+                  ? 'bg-[var(--f1-red)] text-white shadow-md shadow-red-900/30'
+                  : 'text-[var(--f1-gray)] hover:text-white'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              Track Time
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero section */}
+      <Hero meeting={selectedMeeting} isRaceWeek={isRaceWeekNow} />
+
+      {/* Countdown timer */}
+      <section className="relative">
         <CountdownTimer targetSession={nextSession} />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main dashboard content grid */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
         <div className="lg:col-span-2">
-          <SessionSchedule sessions={sessions} />
+          <SessionSchedule 
+            sessions={selectedSessions} 
+            timezoneMode={timezoneMode} 
+            gmtOffset={selectedMeeting?.gmt_offset} 
+          />
         </div>
 
-        <div className="space-y-6">
-          <TrackInfo meeting={meeting} />
+        <div className="space-y-6 md:space-y-8">
+          <TrackInfo meeting={selectedMeeting} />
           <WeatherWidget weather={weather} />
         </div>
       </section>
 
-      <footer className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.1)] text-center">
+      {/* Footer */}
+      <footer className="mt-16 pt-8 border-t border-[rgba(255,255,255,0.06)] text-center pb-12">
         <p className="text-sm text-[var(--f1-gray)]">
           Data provided by{' '}
           <a
             href="https://openf1.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--f1-red)] hover:underline"
+            className="text-[var(--f1-red)] hover:underline font-semibold"
           >
             OpenF1 API
           </a>
         </p>
-        <p className="text-xs text-[var(--f1-gray)] mt-2">
-          All times displayed in your local timezone
+        <p className="text-xs text-[var(--f1-gray)] mt-2 opacity-80">
+          All session times display automatically based on your timezone preference
         </p>
       </footer>
     </main>
