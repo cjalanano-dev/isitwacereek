@@ -8,7 +8,7 @@ import SessionSchedule from '@/components/SessionSchedule';
 import TrackInfo from '@/components/TrackInfo';
 import WeatherWidget from '@/components/WeatherWidget';
 import Loading from '@/components/Loading';
-import { Globe, Clock } from 'lucide-react';
+import { Globe, Clock, Flag } from 'lucide-react';
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
@@ -141,23 +141,25 @@ export default function Home() {
   }
 
   return (
-    <main className="container-main space-y-6 md:space-y-10">
+    <main className="container-main space-y-5 md:space-y-7">
       {/* Top Header controls: Calendar Selector & Timezone Toggle */}
-      <header className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-[rgba(255,255,255,0.06)]">
+      <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 py-3 md:py-4">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🏁</span>
-          <span className="font-display font-extrabold text-2xl tracking-wider uppercase text-glow">
-            RaceWeek<span className="text-[var(--f1-red)]">Hub</span>
-          </span>
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--f1-red)]"><Flag className="h-4 w-4" /></span>
+          <div>
+            <span className="block font-display font-bold text-lg tracking-tight">Is it race week?</span>
+            <span className="block text-[10px] uppercase tracking-[.2em] text-[var(--f1-gray)]">Formula 1 weekend guide</span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch gap-2 w-full md:w-auto">
           {/* Race dropdown selector */}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-72">
             <select
               value={selectedMeeting?.meeting_key || ''}
               onChange={(e) => handleMeetingChange(e.target.value)}
-              className="w-full bg-[var(--f1-dark)] border border-[rgba(255,255,255,0.1)] text-sm rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[var(--f1-red)] transition-colors custom-select cursor-pointer font-medium"
+              aria-label="Select a race weekend"
+              className="w-full bg-[var(--f1-dark)] border border-[#2a2a2a] text-sm rounded-lg py-2.5 px-3 text-white focus:outline-none focus:border-[var(--f1-red)] transition-colors custom-select cursor-pointer font-medium"
             >
               {meetings.map((m) => (
                 <option key={m.meeting_key} value={m.meeting_key}>
@@ -168,28 +170,30 @@ export default function Home() {
           </div>
 
           {/* Timezone Preference Switcher */}
-          <div className="flex bg-[var(--f1-dark)] border border-[rgba(255,255,255,0.06)] rounded-xl p-1 w-full sm:w-auto">
+          <div className="flex bg-[var(--f1-dark)] border border-[#2a2a2a] rounded-lg p-1 w-full sm:w-auto" aria-label="Time display preference">
             <button
               onClick={() => setTimezoneMode('local')}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 w-1/2 sm:w-auto ${
+              aria-pressed={timezoneMode === 'local'}
+              className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors w-1/2 sm:w-auto ${
                 timezoneMode === 'local'
-                  ? 'bg-[var(--f1-red)] text-white shadow-md shadow-red-900/30'
+                  ? 'bg-white text-black'
                   : 'text-[var(--f1-gray)] hover:text-white'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              Local Time
+              My time
             </button>
             <button
               onClick={() => setTimezoneMode('track')}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 w-1/2 sm:w-auto ${
+              aria-pressed={timezoneMode === 'track'}
+              className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors w-1/2 sm:w-auto ${
                 timezoneMode === 'track'
-                  ? 'bg-[var(--f1-red)] text-white shadow-md shadow-red-900/30'
+                  ? 'bg-white text-black'
                   : 'text-[var(--f1-gray)] hover:text-white'
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
-              Track Time
+              Track time
             </button>
           </div>
         </div>
@@ -220,7 +224,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-16 pt-8 border-t border-[rgba(255,255,255,0.06)] text-center pb-12">
+      <footer className="mt-12 pt-6 border-t border-[#242424] flex flex-col sm:flex-row items-center justify-between gap-2 pb-6">
         <p className="text-sm text-[var(--f1-gray)]">
           Data provided by{' '}
           <a
@@ -232,8 +236,8 @@ export default function Home() {
             OpenF1 API
           </a>
         </p>
-        <p className="text-xs text-[var(--f1-gray)] mt-2 opacity-80">
-          All session times display automatically based on your timezone preference
+        <p className="text-xs text-[var(--f1-gray)]">
+          Session times follow your selected timezone.
         </p>
       </footer>
     </main>

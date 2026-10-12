@@ -19,12 +19,12 @@ export default function WeatherWidget({ weather }) {
 
     const getWeatherIcon = () => {
         if (weather.rainfall > 0) {
-            return <CloudRain className="w-14 h-14 text-blue-400 weather-icon animate-pulse" />;
+            return <CloudRain className="w-14 h-14 text-[var(--f1-red)] weather-icon" />;
         }
         if (weather.humidity > 70) {
             return <Cloud className="w-14 h-14 text-gray-400 weather-icon" />;
         }
-        return <Sun className="w-14 h-14 text-yellow-400 weather-icon animate-spin-slow" style={{ animationDuration: '20s' }} />;
+        return <Sun className="w-14 h-14 text-white weather-icon" />;
     };
 
     const getConditionText = () => {
@@ -61,7 +61,7 @@ export default function WeatherWidget({ weather }) {
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 transition-colors hover:border-zinc-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Thermometer className="w-4 h-4 text-orange-400" />
+                        <Thermometer className="w-4 h-4 text-[var(--f1-red)]" />
                         <span className="text-xs text-[var(--f1-gray)] font-mono font-semibold uppercase">Track Temp</span>
                     </div>
                     <p className="text-xl font-black text-white font-mono">{Math.round(weather.track_temperature)}°C</p>
@@ -69,7 +69,7 @@ export default function WeatherWidget({ weather }) {
 
                 <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 transition-colors hover:border-zinc-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Droplets className="w-4 h-4 text-blue-400" />
+                        <Droplets className="w-4 h-4 text-white" />
                         <span className="text-xs text-[var(--f1-gray)] font-mono font-semibold uppercase">Humidity</span>
                     </div>
                     <p className="text-xl font-black text-white font-mono">{weather.humidity}%</p>
@@ -77,7 +77,7 @@ export default function WeatherWidget({ weather }) {
 
                 <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 transition-colors hover:border-zinc-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Wind className="w-4 h-4 text-cyan-400" />
+                        <Wind className="w-4 h-4 text-white" />
                         <span className="text-xs text-[var(--f1-gray)] font-mono font-semibold uppercase">Wind Speed</span>
                     </div>
                     <p className="text-xl font-black text-white font-mono">{weather.wind_speed} m/s</p>
@@ -93,9 +93,9 @@ export default function WeatherWidget({ weather }) {
             </div>
 
             {weather.rainfall > 0 && (
-                <div className="mt-4 p-3.5 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center gap-3 animate-pulse">
-                    <CloudRain className="w-5 h-5 text-blue-400" />
-                    <span className="text-xs text-blue-300 font-mono font-semibold uppercase tracking-wider">Precipitation detected on track</span>
+                <div className="mt-4 p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center gap-3">
+                    <CloudRain className="w-5 h-5 text-[var(--f1-red)]" />
+                    <span className="text-xs text-white font-mono font-semibold uppercase tracking-wider">Precipitation detected on track</span>
                 </div>
             )}
         </div>

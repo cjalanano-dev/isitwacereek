@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatLocalDateTime, formatLocalTime, isSessionLive, isSessionEnded, getTimezoneAbbr } from '@/utils/time';
 import { formatInTimeZone } from 'date-fns-tz';
-import { Clock, CheckCircle2, Radio, CalendarDays, ExternalLink } from 'lucide-react';
+import { Clock, CheckCircle2, CalendarDays } from 'lucide-react';
 
 export default function SessionSchedule({ sessions, timezoneMode, gmtOffset }) {
     const [timezone, setTimezone] = useState('');
@@ -93,7 +93,7 @@ export default function SessionSchedule({ sessions, timezoneMode, gmtOffset }) {
                 </span>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
                 {sessions.map((session, index) => {
                     const live = isSessionLive(session);
                     const ended = isSessionEnded(session);
@@ -116,7 +116,7 @@ export default function SessionSchedule({ sessions, timezoneMode, gmtOffset }) {
                                     ) : ended ? (
                                         <CheckCircle2 className="w-5 h-5 text-zinc-500" />
                                     ) : (
-                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[var(--f1-red)]" />
                                     )}
                                 </div>
                                 <div className="space-y-1">
